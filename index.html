@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STOPWATCH</title>
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --gold-light: #FFD700;
+            --gold-dark: #996515;
+            --black: #121212;
+            --white: #F8F8F8;
+            --danger: #e74c3c;
+            --glass: rgba(255, 255, 255, 0.1);
+            --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            --transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Playfair Display', serif;
+            background: linear-gradient(135deg, #0F2027, #203A43, #2C5364);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--white);
+            overflow-x: hidden;
+        }
+
+        .chronograph {
+            width: 420px;
+            max-width: 95%;
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: var(--shadow);
+            padding: 2.5rem;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .chronograph::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(212, 175, 55, 0.1) 0%, transparent 70%);
+            z-index: -1;
+            animation: rotate 60s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        h1 {
+            font-weight: 700;
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            background: linear-gradient(to right, var(--gold), var(--gold-light));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 1px;
+            position: relative;
+            display: inline-block;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        h1::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(to right, var(--gold), var(--gold-light), var(--gold));
+            border-radius: 2px;
+        }
+
+        .time-display {
+            display: flex;
+            justify-content: center;
+            align-items: baseline;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 500;
+            text-align: center;
+            margin: 2rem 0;
+            color: var(--white);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+            position: relative;
+        }
+
+        .time-segment {
+            font-size: 3.5rem;
+            line-height: 1;
+            min-width: 2ch;
+            text-align: center;
+            display: inline-block;
+        }
+
+        .milliseconds {
+            font-size: 2rem;
+            line-height: 1;
+            opacity: 0.9;
+            align-self: flex-end;
+            margin-left: 0.1rem;
+            position: relative;
+            top: -0.1rem;
+            min-width: 4ch;
+        }
+
+        .time-display::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.3), transparent);
+        }
+
+        .time-display::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.3), transparent);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+
+        button {
+            position: relative;
+            background: transparent;
+            color: var(--gold);
+            border: 1px solid var(--gold);
+            border-radius: 50px;
+            padding: 1rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: var(--transition);
+            overflow: hidden;
+            z-index: 1;
+            min-width: 90px;
+            text-align: center;
+            flex: 1;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, var(--gold), var(--gold-light));
+            z-index: -1;
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        button:hover {
+            color: var(--black);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(212, 175, 55, 0.3);
+        }
+
+        button:hover::before {
+            opacity: 1;
+        }
+
+        button:active {
+            transform: translateY(-1px);
+        }
+
+        #startStop.stop {
+            background: var(--danger);
+            border-color: var(--danger);
+            color: white;
+        }
+
+        #reset {
+            background: var(--danger);
+            border-color: var(--danger);
+            color: white;
+        }
+
+        #reset:hover::before {
+            background: linear-gradient(to right, #c0392b, #e74c3c);
+        }
+
+        .laps-container {
+            max-height: 250px;
+            overflow-y: auto;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            border-radius: 16px;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .laps-container h3 {
+            margin-bottom: 1.5rem;
+            color: var(--gold);
+            font-weight: 500;
+            font-size: 1.2rem;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        #lapsList {
+            list-style-type: none;
+        }
+
+        #lapsList li {
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: fadeIn 0.5s ease-out;
+            color: var(--white);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #lapsList li:first-child {
+            color: var(--gold-light);
+            font-weight: 600;
+        }
+
+        .lap-number {
+            font-family: 'Playfair Display', serif;
+            font-style: bold;
+        }
+
+        .lap-time {
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 1px;
+        }
+
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--gold-light);
+            border-radius: 50%;
+            opacity: 0.5;
+            animation: float linear infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0) translateX(0); opacity: 0; }
+            50% { opacity: 0.8; }
+            100% { transform: translateY(-100vh) translateX(20px); opacity: 0; }
+        }
+
+        @media (max-width: 480px) {
+            .chronograph {
+                padding: 1.8rem;
+            }
+            
+            .time-segment {
+                font-size: 2.8rem;
+            }
+            
+            .milliseconds {
+                font-size: 1.6rem;
+            }
+            
+            .controls {
+                flex-direction: row;
+                gap: 0.5rem;
+            }
+            
+            button {
+                padding: 0.8rem 0.5rem;
+                font-size: 0.9rem;
+                min-width: auto;
+            }
+        }
+
+        /* Glow animation for running timer */
+        @keyframes glow {
+            0% { text-shadow: 0 0 10px rgba(255, 255, 255, 0.3); }
+            50% { text-shadow: 0 0 20px rgba(255, 215, 0, 0.7); }
+            100% { text-shadow: 0 0 10px rgba(255, 255, 255, 0.3); }
+        }
+
+        .running .time-segment,
+        .running .milliseconds {
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        /* Custom scrollbar */
+        .laps-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .laps-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .laps-container::-webkit-scrollbar-thumb {
+            background: var(--gold);
+            border-radius: 3px;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Orbitron:wght@500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="particles" id="particles"></div>
+    
+    <div class="chronograph">
+        <h1>STOPWATCH</h1>
+        <div class="time-display">
+            <span class="time-segment" id="hours">00</span>:
+            <span class="time-segment" id="minutes">00</span>:
+            <span class="time-segment" id="seconds">00</span>
+            <span class="milliseconds" id="milliseconds">.000</span>
+        </div>
+        <div class="controls">
+            <button id="startStop">Start</button>
+            <button id="lapReset">Lap</button>
+            <button id="reset">Reset</button>
+        </div>
+        <div class="laps-container">
+            <h3>Lap Times</h3>
+            <ul id="lapsList"></ul>
+        </div>
+    </div>
+
+    <script>
+        // Stopwatch variables
+        let startTime;
+        let elapsedTime = 0;
+        let timerInterval;
+        let isRunning = false;
+        let lapCount = 1;
+
+        // DOM elements
+        const hoursDisplay = document.getElementById('hours');
+        const minutesDisplay = document.getElementById('minutes');
+        const secondsDisplay = document.getElementById('seconds');
+        const millisecondsDisplay = document.getElementById('milliseconds');
+        const timeDisplay = document.querySelector('.time-display');
+        const startStopBtn = document.getElementById('startStop');
+        const lapResetBtn = document.getElementById('lapReset');
+        const resetBtn = document.getElementById('reset');
+        const lapsList = document.getElementById('lapsList');
+        const particlesContainer = document.getElementById('particles');
+
+        // Create floating particles
+        function createParticles() {
+            const particleCount = 30;
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${Math.random() * 100}%`;
+                particle.style.width = `${Math.random() * 3 + 1}px`;
+                particle.style.height = particle.style.width;
+                particle.style.animationDuration = `${Math.random() * 20 + 10}s`;
+                particle.style.animationDelay = `${Math.random() * 5}s`;
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // Format time segments with leading zeros
+        function formatSegment(value, length) {
+            return String(value).padStart(length, '0');
+        }
+
+        // Update the display with separate time segments
+        function updateDisplay(time) {
+            const hours = Math.floor(time / 3600000);
+            const minutes = Math.floor((time % 3600000) / 60000);
+            const seconds = Math.floor((time % 60000) / 1000);
+            const milliseconds = time % 1000;
+
+            hoursDisplay.textContent = formatSegment(hours, 2);
+            minutesDisplay.textContent = formatSegment(minutes, 2);
+            secondsDisplay.textContent = formatSegment(seconds, 2);
+            millisecondsDisplay.textContent = '.' + formatSegment(milliseconds, 3);
+        }
+
+        // Start or stop the timer
+        function toggleTimer() {
+            if (!isRunning) {
+                startTime = Date.now() - elapsedTime;
+                timerInterval = setInterval(() => {
+                    elapsedTime = Date.now() - startTime;
+                    updateDisplay(elapsedTime);
+                }, 10);
+                isRunning = true;
+                startStopBtn.textContent = 'Stop';
+                startStopBtn.classList.add('stop');
+                timeDisplay.classList.add('running');
+            } else {
+                clearInterval(timerInterval);
+                isRunning = false;
+                startStopBtn.textContent = 'Start';
+                startStopBtn.classList.remove('stop');
+                timeDisplay.classList.remove('running');
+            }
+        }
+
+        // Handle lap
+        function handleLap() {
+            if (!isRunning) return;
+            
+            // Add lap
+            const lapItem = document.createElement('li');
+            const hours = hoursDisplay.textContent;
+            const minutes = minutesDisplay.textContent;
+            const seconds = secondsDisplay.textContent;
+            const milliseconds = millisecondsDisplay.textContent;
+            
+            lapItem.innerHTML = `
+                <span class="lap-number">Lap ${lapCount}</span>
+                <span class="lap-time">${hours}:${minutes}:${seconds}${milliseconds}</span>
+            `;
+            lapsList.prepend(lapItem);
+            lapCount++;
+            
+            // Animate lap addition
+            lapItem.style.opacity = '0';
+            setTimeout(() => {
+                lapItem.style.opacity = '1';
+            }, 10);
+        }
+
+        // Handle reset
+        function handleReset() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            elapsedTime = 0;
+            lapCount = 1;
+            updateDisplay(0);
+            lapsList.innerHTML = '';
+            startStopBtn.textContent = 'Start';
+            startStopBtn.classList.remove('stop');
+            timeDisplay.classList.remove('running');
+        }
+
+        // Initialize
+        createParticles();
+        updateDisplay(0);
+
+        // Event listeners
+        startStopBtn.addEventListener('click', toggleTimer);
+        lapResetBtn.addEventListener('click', handleLap);
+        resetBtn.addEventListener('click', handleReset);
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                toggleTimer();
+            } else if (e.code === 'KeyL') {
+                handleLap();
+            } else if (e.code === 'KeyR') {
+                handleReset();
+            }
+        });
+    </script>
+</body>
+</html>
