@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Stopwatch</title>
+    <style>
+        /* Main container styling */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+
+        .stopwatch {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+            padding: 30px;
+            width: 320px;
+            text-align: center;
+        }
+
+        /* Time display */
+        .time-display {
+            font-size: 2.8rem;
+            font-weight: 300;
+            margin: 20px 0;
+            letter-spacing: 1px;
+        }
+
+        /* Button styles */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-start {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .btn-pause {
+            background: #e67e22;
+            color: white;
+        }
+
+        .btn-reset {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-lap {
+            background: #3498db;
+            color: white;
+        }
+
+        /* Lap times section */
+        .laps {
+            max-height: 200px;
+            overflow-y: auto;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+
+        .laps h3 {
+            margin: 0 0 12px 0;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .lap-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f5f5f5;
+        }
+
+        .lap-number {
+            color: #7f8c8d;
+        }
+
+        .lap-time {
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="stopwatch">
+        <h1>Stopwatch</h1>
+        
+        <!-- Time display -->
+        <div class="time-display" id="display">00:00:00.00</div>
+        
+        <!-- Control buttons -->
+        <div class="controls">
+            <button class="btn btn-start" id="startBtn">Start</button>
+            <button class="btn btn-pause" id="pauseBtn" disabled>Pause</button>
+            <button class="btn btn-reset" id="resetBtn" disabled>Reset</button>
+            <button class="btn btn-lap" id="lapBtn" disabled>Lap</button>
+        </div>
+        
+        <!-- Lap times display -->
+        <div class="laps">
+            <h3>Lap Times</h3>
+            <div id="lapTimes"></div>
+        </div>
+    </div>
+
+    <script>
+        // Wait for DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get all the elements we need
+            const display = document.getElementById('display');
+            const startBtn = document.getElementById('startBtn');
+            const pauseBtn = document.getElementById('pauseBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const lapBtn = document.getElementById('lapBtn');
+            const lapTimesContainer = document.getElementById('lapTimes');
+            
+            // Stopwatch state
+            let startTime = 0;
+            let elapsedTime = 0;
+            let timerInterval = null;
+            let lapCount = 0;
+            let isRunning = false;
+            
+            /**
+             * Formats milliseconds into a human-readable time string
+             * @param {number} milliseconds - Time in milliseconds
+             * @returns {string} Formatted time string (HH:MM:SS.mm)
+             */
+            function formatTime(milliseconds) {
+                // Calculate hours, minutes, seconds, and centiseconds
+                let centiseconds = Math.floor((milliseconds % 1000) / 10);
+                let seconds = Math.floor((milliseconds / 1000) % 60);
+                let minutes = Math.floor((milliseconds / (1000 * 60)) % 60);
+                let hours = Math.floor(milliseconds / (1000 * 60 * 60));
+                
+                // Pad with leading zeros for consistent formatting
+                return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${centiseconds.toString().padStart(2, '0')}`;
+            }
+            
+            //Updates the display with the current elapsed time
+            function updateDisplay() {
+                display.textContent = formatTime(elapsedTime);
+            }
+            
+            // Starts the stopwatch
+            function startStopwatch() {
+                if (!isRunning) {
+                    // Set the start time (adjusting for any existing elapsed time)
+                    startTime = Date.now() - elapsedTime;
+                    
+                    // Update the display every 10ms (for smooth centisecond display)
+                    timerInterval = setInterval(function() {
+                        elapsedTime = Date.now() - startTime;
+                        updateDisplay();
+                    }, 10);
+                    
+                    isRunning = true;
+                    updateButtonStates();
+                }
+            }
+            
+            // Pauses the stopwatch
+            function pauseStopwatch() {
+                if (isRunning) {
+                    clearInterval(timerInterval);
+                    isRunning = false;
+                    updateButtonStates();
+                }
+            }
+            
+            // Resets the stopwatch to initial state
+            function resetStopwatch() {
+                // Clear any running interval
+                clearInterval(timerInterval);
+                
+                // Reset all state variables
+                isRunning = false;
+                elapsedTime = 0;
+                lapCount = 0;
+                
+                // Update display and clear lap times
+                updateDisplay();
+                lapTimesContainer.innerHTML = '';
+                
+                // Update button states
+                updateButtonStates();
+            }
+            
+            // Records a lap time
+            function recordLap() {
+                if (isRunning) {
+                    lapCount++;
+                    
+                    // Create a new lap element
+                    const lapElement = document.createElement('div');
+                    lapElement.className = 'lap-item';
+                    lapElement.innerHTML = `
+                        <span class="lap-number">Lap ${lapCount}</span>
+                        <span class="lap-time">${formatTime(elapsedTime)}</span>
+                    `;
+                    
+                    // Add to the top of the lap list
+                    lapTimesContainer.prepend(lapElement);
+                }
+            }
+            
+            // Updates the enabled/disabled state of all buttons
+            function updateButtonStates() {
+                startBtn.disabled = isRunning;
+                pauseBtn.disabled = !isRunning;
+                resetBtn.disabled = !isRunning && elapsedTime === 0;
+                lapBtn.disabled = !isRunning;
+            }
+            
+            // Set up event listeners
+            startBtn.addEventListener('click', startStopwatch);
+            pauseBtn.addEventListener('click', pauseStopwatch);
+            resetBtn.addEventListener('click', resetStopwatch);
+            lapBtn.addEventListener('click', recordLap);
+            
+            // Initialize button states
+            updateButtonStates();
+        });
+    </script>
+</body>
+</html>
